@@ -1,194 +1,288 @@
 <?php
 session_start();
 
-/* Verifica login */
-if(!isset($_SESSION["tipo"])) {
+/* ============================
+   VERIFICA LOGIN
+============================ */
+if (!isset($_SESSION["logado"])) {
+
     header("Location: index.php");
     exit();
 }
 
-$tipo = $_SESSION["tipo"];
+/* Conexão */
+include("conexao.php");
+
+/* Dados usuário */
 $nome = $_SESSION["nome"];
+$tipo = $_SESSION["tipo"];
 ?>
 
 <!doctype html>
 <html lang="pt-br">
 <head>
-  <meta charset="utf-8">
-  <title>Painel - Sistema OS</title>
+    <meta charset="utf-8">
 
-  <!-- Bootstrap 4 -->
-  <link rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css">
+    <title>Painel - Sistema OS</title>
 
-  <!-- Cover Template -->
-  <link rel="stylesheet"
-        href="https://getbootstrap.com/docs/4.0/examples/cover/cover.css">
+    <!-- Bootstrap -->
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css">
 
-  <style>
-    /* Centralizar menu */
-    .nav-masthead {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
+    <!-- Cover -->
+    <link rel="stylesheet"
+          href="https://getbootstrap.com/docs/4.0/examples/cover/cover.css">
 
-    /* Dropdown menu escuro */
-    .dropdown-menu {
-      background-color: #222;
-      border: 1px solid #444;
-      text-align: center;
-    }
+    <style>
 
-    .dropdown-item {
-      color: white;
-    }
+        /* Centralizar menu */
+        .nav-masthead {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
-    .dropdown-item:hover {
-      background-color: #444;
-      color: white;
-    }
+        /* Dropdown escuro */
+        .dropdown-menu {
+            background-color: #222;
+            border: 1px solid #444;
+            text-align: center;
+        }
 
-    /* Espaçamento dos links */
-    .nav-link {
-      margin: 0 10px;
-    }
+        .dropdown-item {
+            color: white;
+        }
 
-    /* Logo */
-    .masthead-brand img {
-  height: 110px;   /* Logo maior */
-  margin-bottom: 15px;
-}
-  </style>
+        .dropdown-item:hover {
+            background-color: #444;
+            color: white;
+        }
+
+        /* Espaçamento links */
+        .nav-link {
+            margin: 0 10px;
+        }
+
+        /* Logo */
+        .masthead-brand img {
+            height: 110px;
+            margin-bottom: 15px;
+        }
+
+        /* Caixa central */
+        .box {
+            background: white;
+            color: black;
+            padding: 40px;
+            border-radius: 15px;
+            max-width: 800px;
+            margin: auto;
+            text-align: center;
+
+            box-shadow: 0px 0px 25px rgba(0,0,0,0.4);
+        }
+
+        .box h1 {
+            font-size: 40px;
+            margin-bottom: 20px;
+        }
+
+        .box p {
+            font-size: 18px;
+        }
+
+    </style>
 </head>
 
 <body class="text-center">
 
 <div class="cover-container d-flex h-100 p-3 mx-auto flex-column">
 
-  <!-- TOPO -->
-  <header class="masthead mb-auto">
-    <div class="inner">
+    <!-- TOPO -->
+    <header class="masthead mb-auto">
 
-      <!-- LOGO -->
-      <a href="painel.php" class="masthead-brand">
-        <img src="imagens/logo.png" alt="Logo Sistema OS">
-      </a>
+        <div class="inner">
 
-      <!-- MENU -->
-      <nav class="nav nav-masthead justify-content-center">
+            <!-- LOGO -->
+            <a href="painel.php" class="masthead-brand">
 
-        <!-- Início -->
-        <a class="nav-link active" href="painel.php">Início</a>
+                <img src="imagens/logo.png" alt="Logo Sistema OS">
 
-        <!-- Usuários (somente admin) -->
-        <?php if($tipo == "admin"): ?>
-          <div class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle"
-               href="#"
-               id="usuariosDropdown"
-               role="button"
-               data-toggle="dropdown">
-              Usuários
             </a>
 
-            <div class="dropdown-menu">
-              <a class="dropdown-item" href="cadastrarUsuario.php">
-                Cadastrar Usuário
-              </a>
+            <!-- MENU -->
+            <nav class="nav nav-masthead justify-content-center">
 
-              <a class="dropdown-item" href="gerenciarUsuarios.php">
-                Gerenciar Usuários
-              </a>
-            </div>
-          </div>
-        <?php endif; ?>
+                <!-- Início -->
+                <a class="nav-link active" href="painel.php">
 
-        <!-- Clientes -->
-        <div class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle"
-             href="#"
-             id="clientesDropdown"
-             role="button"
-             data-toggle="dropdown">
-            Clientes
-          </a>
+                    Início
 
-          <div class="dropdown-menu">
-            <a class="dropdown-item" href="cadastroCliente.php">
-              Cadastrar Cliente
-            </a>
+                </a>
 
-            <a class="dropdown-item" href="adicionarDepartamento.php">
-              Adicionar departamento
-            </a>
-          </div>
+                <!-- Usuários -->
+                <?php if ($tipo == "admin"): ?>
+
+                    <div class="nav-item dropdown">
+
+                        <a class="nav-link dropdown-toggle"
+                           href="#"
+                           data-toggle="dropdown">
+
+                            Usuários
+
+                        </a>
+
+                        <div class="dropdown-menu">
+
+                            <a class="dropdown-item"
+                               href="cadastrarUsuario.php">
+
+                                Cadastrar Usuário
+
+                            </a>
+
+                            <a class="dropdown-item"
+                               href="gerenciarUsuarios.php">
+
+                                Gerenciar Usuários
+
+                            </a>
+
+                        </div>
+
+                    </div>
+
+                <?php endif; ?>
+
+                <!-- Clientes -->
+                <div class="nav-item dropdown">
+
+                    <a class="nav-link dropdown-toggle"
+                       href="#"
+                       data-toggle="dropdown">
+
+                        Clientes
+
+                    </a>
+
+                    <div class="dropdown-menu">
+
+                        <a class="dropdown-item"
+                           href="cadastroCliente.php">
+
+                            Cadastrar Cliente
+
+                        </a>
+
+                        <a class="dropdown-item"
+                           href="adicionarDepartamento.php">
+
+                            Adicionar departamento
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+                <!-- Ordem Serviço -->
+                <div class="nav-item dropdown">
+
+                    <a class="nav-link dropdown-toggle"
+                       href="#"
+                       data-toggle="dropdown">
+
+                        Ordem de Serviço
+
+                    </a>
+
+                    <div class="dropdown-menu">
+
+                        <a class="dropdown-item"
+                           href="cadastroOS.php">
+
+                            Cadastrar OS
+
+                        </a>
+
+                        <a class="dropdown-item"
+                           href="consulta.php">
+
+                            Consultar OS
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+                <!-- Logout -->
+                <a class="nav-link text-danger"
+                   href="logout.php">
+
+                    Sair
+
+                </a>
+
+            </nav>
+
         </div>
 
-        <!-- Ordem de Serviço -->
-        <div class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle"
-             href="#"
-             id="osDropdown"
-             role="button"
-             data-toggle="dropdown">
-            Ordem de Serviço
-          </a>
+    </header>
 
-          <div class="dropdown-menu">
-            <a class="dropdown-item" href="cadastroOS.php">
-              Cadastrar OS
-            </a>
+    <!-- CONTEÚDO -->
+    <main role="main" class="inner cover">
 
-            <a class="dropdown-item" href="consulta.php">
-              Consultar OS
-            </a>
-          </div>
+        <div class="box">
+
+            <h1>
+
+                Bem-vindo, <?= $nome ?>
+
+            </h1>
+
+            <p>
+
+                Tipo de usuário:
+                <b><?= ucfirst($tipo) ?></b>
+
+            </p>
+
+            <hr>
+
+            <p>
+
+                Sistema de Ordem de Serviço funcionando com PostgreSQL.
+
+            </p>
+
         </div>
 
-        <!-- Sair -->
-        <a class="nav-link text-danger" href="logout.php">Sair</a>
+    </main>
 
-      </nav>
-    </div>
-  </header>
+    <!-- RODAPÉ -->
+    <footer class="mastfoot mt-auto">
 
+        <div class="inner">
 
-  <!-- CONTEÚDO CENTRAL -->
-  <main role="main" class="inner cover">
+            <p>
 
-    <h1 class="cover-heading">Bem-vindo, <?php echo $nome; ?></h1>
+                Sistema OS © 2026 - GGS
 
-    <?php if($tipo == "admin"): ?>
-      <p class="lead">
-        Você está logado como Administrador.
-      </p>
-    <?php else: ?>
-      <p class="lead">
-        Você está logado como Funcionário.
-      </p>
-    <?php endif; ?>
+            </p>
 
-    <p class="lead">
-      Use o menu acima para acessar as funções do sistema.
-    </p>
+        </div>
 
-  </main>
-
-
-  <!-- RODAPÉ -->
-  <footer class="mastfoot mt-auto">
-    <div class="inner">
-      <p>Sistema OS © 2026</p>
-    </div>
-  </footer>
+    </footer>
 
 </div>
 
-
-<!-- Scripts Bootstrap -->
+<!-- Scripts -->
 <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
 
 </body>
