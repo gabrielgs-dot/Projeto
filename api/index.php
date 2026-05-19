@@ -1,28 +1,32 @@
 <?php
 session_start();
 
-require_once __DIR__ . "/conexao.php";
+include("conexao.php");
 
 $erro = "";
 
-/* ============================
-   LOGIN (ADMIN + FUNCIONÁRIO)
-============================ */
+/* LOGIN */
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     $email = $_POST["email"];
     $senha = $_POST["senha"];
 
-    // PostgreSQL
     $sql = "SELECT * FROM usuarios WHERE email = $1";
 
-    $result = pg_query_params($conn, $sql, array($email));
+    $result = pg_query_params(
+        $conn,
+        $sql,
+        array($email)
+    );
 
     if ($result && pg_num_rows($result) == 1) {
 
         $usuario = pg_fetch_assoc($result);
 
-        // Verifica senha
+        echo "<pre>";
+        print_r($usuario);
+        echo "</pre>";
+
         if (password_verify($senha, $usuario["senha"])) {
 
             $_SESSION["logado"] = true;
@@ -34,14 +38,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $_SESSION["admin"] = $usuario["id"];
             }
 
-            header("Location: painel.php");
+            echo "<pre>";
+            print_r($_SESSION);
+            echo "</pre>";
+
             exit();
 
         } else {
+
             $erro = "Senha incorreta!";
         }
 
     } else {
+
         $erro = "Usuário não encontrado!";
     }
 }
@@ -51,84 +60,38 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <html lang="pt-br">
 <head>
     <meta charset="utf-8">
-    <title>Login - Sistema OS</title>
-
-    <!-- Bootstrap -->
-    <link rel="stylesheet"
-          href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
-
-    <style>
-        body {
-            background: #f2f2f2;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .login-box {
-            background: white;
-            width: 100%;
-            max-width: 420px;
-            padding: 35px;
-            border-radius: 15px;
-            box-shadow: 0px 0px 25px rgba(0,0,0,0.15);
-            text-align: center;
-        }
-
-        .login-box img {
-            width: 140px;
-            margin-bottom: 20px;
-        }
-
-        .login-box button {
-            width: 100%;
-        }
-    </style>
+    <title>Login</title>
 </head>
 
 <body>
 
-<div class="login-box">
+<form method="POST">
 
-    <!-- Logo -->
-    <img src="imagens/logo.png" alt="Logo">
+    <input type="email"
+           name="email"
+           placeholder="Email"
+           required>
 
-    <h4 class="mb-4">Login do Sistema</h4>
+    <br><br>
 
-    <!-- Mensagem de erro -->
-    <?php if(!empty($erro)) : ?>
-        <div class="alert alert-danger">
-            <?php echo $erro; ?>
-        </div>
-    <?php endif; ?>
+    <input type="password"
+           name="senha"
+           placeholder="Senha"
+           required>
 
-    <!-- Formulário -->
-    <form method="POST">
+    <br><br>
 
-        <input type="email"
-               name="email"
-               class="form-control mb-3"
-               placeholder="Digite seu email"
-               required>
+    <button type="submit">
+        Entrar
+    </button>
 
-        <input type="password"
-               name="senha"
-               class="form-control mb-3"
-               placeholder="Digite sua senha"
-               required>
+</form>
 
-        <button class="btn btn-primary btn-lg" type="submit">
-            Entrar
-        </button>
+<?php if(!empty($erro)): ?>
 
-        <p class="mt-4 text-muted">
-            Sistema de Ordem de Serviço © 2026
-        </p>
+    <p><?= $erro ?></p>
 
-    </form>
-
-</div>
+<?php endif; ?>
 
 </body>
 </html>
