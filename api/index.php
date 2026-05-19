@@ -20,26 +20,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = trim($_POST["email"]);
     $senha = trim($_POST["senha"]);
 
-    $sql = "SELECT * FROM usuarios WHERE email = ? LIMIT 1";
+    /* PostgreSQL */
+    $sql = "SELECT * FROM usuarios WHERE email = $1 LIMIT 1";
 
-    $stmt = $conn->prepare($sql);
+    $result = pg_query_params($conn, $sql, array($email));
 
-    if (!$stmt) {
-        die("Erro no prepare: " . $conn->error);
+    if (!$result) {
+        die("Erro na consulta: " . pg_last_error($conn));
     }
-
-    $stmt->bind_param("s", $email);
-
-    if (!$stmt->execute()) {
-        die("Erro no execute: " . $stmt->error);
-    }
-
-    $result = $stmt->get_result();
 
     /* Usuário encontrado */
-    if ($result->num_rows > 0) {
+    if (pg_num_rows($result) > 0) {
 
-        $usuario = $result->fetch_assoc();
+        $usuario = pg_fetch_assoc($result);
 
         /* Verifica senha */
         if (password_verify($senha, $usuario["senha"])) {
@@ -53,14 +46,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             if ($usuario["tipo"] == "admin") {
                 $_SESSION["admin"] = $usuario["id"];
             }
-
-            /* DEBUG */
-            /*
-            echo "<pre>";
-            print_r($_SESSION);
-            echo "</pre>";
-            exit();
-            */
 
             header("Location: painel.php");
             exit();
