@@ -1,5 +1,6 @@
 <?php
 session_start();
+
 require_once __DIR__ . "/conexao.php";
 
 $erro = "";
@@ -52,6 +53,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta charset="utf-8">
     <title>Login - Sistema OS</title>
 
+    <!-- Bootstrap -->
     <link rel="stylesheet"
           href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
 
@@ -89,16 +91,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <div class="login-box">
 
+    <!-- Logo -->
     <img src="imagens/logo.png" alt="Logo">
 
     <h4 class="mb-4">Login do Sistema</h4>
 
+    <!-- Mensagem de erro -->
     <?php if(!empty($erro)) : ?>
         <div class="alert alert-danger">
             <?php echo $erro; ?>
         </div>
     <?php endif; ?>
 
+    <!-- Formulário -->
     <form method="POST">
 
         <input type="email"
