@@ -1,14 +1,15 @@
 <?php
-$host = "localhost";
-$user = "root";
-$pass = "paris1308";
-$db   = "sistema_os";
 
-// Corrigido: mysqli em vez de mysql
-$conn = new mysqli($host, $user, $pass, $db);
+$conn = pg_connect("
+    host=dpg-d85qee3tqb8s73fe6lfg-a.ohio-postgres.render.com
+    port=5432
+    dbname=sistema_os_p356
+    user=admin
+    password=JAyzptEp830EHSGyCoKIhMBwOih7LKOQ
+    sslmode=require
+");
 
-if ($conn->connect_error) {
-    die("Erro na conexão: " . $conn->connect_error);
+if (!$conn) {
+    die("Erro na conexão");
 }
-
 ?>
