@@ -2,31 +2,65 @@
 session_start();
 include("conexao.php");
 
+/* Mostrar erros */
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+/* Se já estiver logado */
+if (isset($_SESSION["logado"])) {
+    header("Location: painel.php");
+    exit();
+}
+
 $erro = "";
 
+/* LOGIN */
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
-    $email = $_POST["email"];
-    $senha = $_POST["senha"];
+    $email = trim($_POST["email"]);
+    $senha = trim($_POST["senha"]);
 
-    $sql = "SELECT * FROM usuarios WHERE email = $1";
+    $sql = "SELECT * FROM usuarios WHERE email = ? LIMIT 1";
 
-    $result = pg_query_params($conn, $sql, array($email));
+    $stmt = $conn->prepare($sql);
 
-    if ($result && pg_num_rows($result) > 0) {
+    if (!$stmt) {
+        die("Erro no prepare: " . $conn->error);
+    }
 
-        $usuario = pg_fetch_assoc($result);
+    $stmt->bind_param("s", $email);
 
+    if (!$stmt->execute()) {
+        die("Erro no execute: " . $stmt->error);
+    }
+
+    $result = $stmt->get_result();
+
+    /* Usuário encontrado */
+    if ($result->num_rows > 0) {
+
+        $usuario = $result->fetch_assoc();
+
+        /* Verifica senha */
         if (password_verify($senha, $usuario["senha"])) {
 
             $_SESSION["logado"] = true;
-            $_SESSION["id"] = $usuario["id"];
-            $_SESSION["nome"] = $usuario["nome"];
-            $_SESSION["tipo"] = $usuario["tipo"];
+            $_SESSION["id"]     = $usuario["id"];
+            $_SESSION["nome"]   = $usuario["nome"];
+            $_SESSION["tipo"]   = $usuario["tipo"];
 
+            /* Se admin */
             if ($usuario["tipo"] == "admin") {
                 $_SESSION["admin"] = $usuario["id"];
             }
+
+            /* DEBUG */
+            /*
+            echo "<pre>";
+            print_r($_SESSION);
+            echo "</pre>";
+            exit();
+            */
 
             header("Location: painel.php");
             exit();
@@ -49,62 +83,111 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <html lang="pt-br">
 <head>
     <meta charset="utf-8">
-    <title>Login</title>
 
+    <title>Login - Sistema OS</title>
+
+    <!-- Bootstrap -->
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css">
+
+    <style>
+
+        body {
+            background: #343a40;
+        }
+
+        .login-box {
+
+            background: white;
+
+            padding: 40px;
+
+            border-radius: 15px;
+
+            margin-top: 100px;
+
+            box-shadow: 0px 0px 20px rgba(0,0,0,0.4);
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .logo img {
+            width: 150px;
+        }
+
+    </style>
 </head>
 
-<body class="bg-dark">
+<body>
 
 <div class="container">
 
-    <div class="row justify-content-center mt-5">
+    <div class="row justify-content-center">
 
-        <div class="col-md-4">
+        <div class="col-md-5">
 
-            <div class="card">
+            <div class="login-box">
 
-                <div class="card-body">
+                <!-- Logo -->
+                <div class="logo">
 
-                    <h3 class="text-center mb-4">
-                        Login
-                    </h3>
+                    <img src="imagens/logo.png" alt="Logo">
 
-                    <?php if ($erro != ""): ?>
+                </div>
 
-                        <div class="alert alert-danger">
-                            <?= $erro ?>
-                        </div>
+                <h3 class="text-center mb-4">
 
-                    <?php endif; ?>
+                    Sistema OS
 
-                    <form method="POST">
+                </h3>
+
+                <!-- Erro -->
+                <?php if (!empty($erro)): ?>
+
+                    <div class="alert alert-danger">
+
+                        <?= $erro ?>
+
+                    </div>
+
+                <?php endif; ?>
+
+                <!-- Form -->
+                <form method="POST">
+
+                    <div class="form-group">
 
                         <label>Email</label>
 
                         <input type="email"
                                name="email"
-                               class="form-control mb-3"
+                               class="form-control"
                                required>
+
+                    </div>
+
+                    <div class="form-group">
 
                         <label>Senha</label>
 
                         <input type="password"
                                name="senha"
-                               class="form-control mb-4"
+                               class="form-control"
                                required>
 
-                        <button type="submit"
-                                class="btn btn-dark btn-block">
+                    </div>
 
-                            Entrar
+                    <button type="submit"
+                            class="btn btn-dark btn-block btn-lg">
 
-                        </button>
+                        Entrar
 
-                    </form>
+                    </button>
 
-                </div>
+                </form>
 
             </div>
 
