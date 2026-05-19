@@ -1,9 +1,12 @@
 <?php
+
 session_start();
-include("conexao.php");
+
+require_once __DIR__ . "/conexao.php";
 
 /* ✅ Permitir admin e funcionário */
 if (!isset($_SESSION["tipo"])) {
+
     header("Location: index.php");
     exit();
 }
@@ -12,6 +15,7 @@ $tipo = $_SESSION["tipo"];
 
 /* ✅ Verifica ID */
 if (!isset($_GET["id"])) {
+
     die("OS não encontrada.");
 }
 
@@ -20,27 +24,37 @@ $id = intval($_GET["id"]);
 /* ===========================
    Buscar OS completa
 =========================== */
+
 $sql = "
-SELECT os.*, c.nome AS cliente_nome, d.nome AS departamento_nome
-FROM ordens_servico os
-JOIN clientes c ON os.cliente_id = c.id
-JOIN departamentos d ON os.departamento_id = d.id
-WHERE os.id = ?
+    SELECT
+        os.*,
+        c.nome AS cliente_nome,
+        d.nome AS departamento_nome
+    FROM ordens_servico os
+    JOIN clientes c
+        ON os.cliente_id = c.id
+    JOIN departamentos d
+        ON os.departamento_id = d.id
+    WHERE os.id = $1
 ";
 
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("i", $id);
-$stmt->execute();
+$result = pg_query_params(
+    $conn,
+    $sql,
+    array($id)
+);
 
-$os = $stmt->get_result()->fetch_assoc();
+$os = pg_fetch_assoc($result);
 
 if (!$os) {
+
     die("OS inválida.");
 }
 
 /* ===========================
    Atualizar OS
 =========================== */
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     $problema = $_POST["problema"];
@@ -49,6 +63,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $valor    = floatval($_POST["valor"]);
 
     /* ✅ Data fechamento */
+
     if ($status == "Fechada") {
 
         $data_fechamento = date("Y-m-d H:i:s");
@@ -56,32 +71,33 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } else {
 
         $data_fechamento = null;
-
     }
 
     $update = "
-        UPDATE ordens_servico 
-        SET problema=?,
-            servico=?,
-            status=?,
-            valor=?,
-            data_fechamento=?
-        WHERE id=?
+        UPDATE ordens_servico
+        SET
+            problema = $1,
+            servico = $2,
+            status = $3,
+            valor = $4,
+            data_fechamento = $5
+        WHERE id = $6
     ";
 
-    $stmt = $conn->prepare($update);
-
-    $stmt->bind_param(
-        "sssdsi",
-        $problema,
-        $servico,
-        $status,
-        $valor,
-        $data_fechamento,
-        $id
+    $resultUpdate = pg_query_params(
+        $conn,
+        $update,
+        array(
+            $problema,
+            $servico,
+            $status,
+            $valor,
+            $data_fechamento,
+            $id
+        )
     );
 
-    if ($stmt->execute()) {
+    if ($resultUpdate) {
 
         header("Location: consulta.php");
         exit();
@@ -89,329 +105,358 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } else {
 
         echo "Erro ao atualizar OS.";
-
     }
 }
 ?>
 
 <!doctype html>
 <html lang="pt-br">
+
 <head>
-  <meta charset="utf-8">
-  <title>Editar OS</title>
 
-  <!-- Bootstrap -->
-  <link rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css">
+<meta charset="utf-8">
 
-  <!-- Cover igual painel -->
-  <link rel="stylesheet"
-        href="https://getbootstrap.com/docs/4.0/examples/cover/cover.css">
+<title>
+Editar OS
+</title>
 
-  <style>
+<!-- Bootstrap -->
+<link rel="stylesheet"
+href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css">
 
-    /* Corrige largura */
-    .cover-container {
-      max-width: 100% !important;
-    }
+<!-- Cover igual painel -->
+<link rel="stylesheet"
+href="https://getbootstrap.com/docs/4.0/examples/cover/cover.css">
 
-    /* Centralizar menu */
-    .nav-masthead {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
+<style>
 
-    /* Dropdown escuro */
-    .dropdown-menu {
-      background-color: #222;
-      border: 1px solid #444;
-      text-align: center;
-    }
+.cover-container {
+  max-width: 100% !important;
+}
 
-    .dropdown-item {
-      color: white;
-    }
+.nav-masthead {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
-    .dropdown-item:hover {
-      background-color: #444;
-      color: white;
-    }
+.dropdown-menu {
+  background-color: #222;
+  border: 1px solid #444;
+  text-align: center;
+}
 
-    /* Espaçamento links */
-    .nav-link {
-      margin: 0 10px;
-    }
+.dropdown-item {
+  color: white;
+}
 
-    /* Logo */
-    .masthead-brand img {
-      height: 110px;
-      margin-bottom: 15px;
-    }
+.dropdown-item:hover {
+  background-color: #444;
+  color: white;
+}
 
-    /* Caixa formulário */
-    .box-form {
-      background: white;
-      color: black;
-      padding: 35px;
-      border-radius: 15px;
-      max-width: 900px;
-      margin: auto;
-      text-align: left;
-      box-shadow: 0px 0px 25px rgba(0,0,0,0.4);
-    }
+.nav-link {
+  margin: 0 10px;
+}
 
-    label {
-      font-weight: bold;
-    }
+.masthead-brand img {
+  height: 110px;
+  margin-bottom: 15px;
+}
 
-    .btn-center {
-      display: flex;
-      justify-content: center;
-      gap: 15px;
-      margin-top: 25px;
-      flex-wrap: wrap;
-    }
+.box-form {
+  background: white;
+  color: black;
+  padding: 35px;
+  border-radius: 15px;
+  max-width: 900px;
+  margin: auto;
+  text-align: left;
+  box-shadow: 0px 0px 25px rgba(0,0,0,0.4);
+}
 
-    .btn-center button,
-    .btn-center a {
-      width: 220px;
-    }
+label {
+  font-weight: bold;
+}
 
-  </style>
+.btn-center {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 25px;
+  flex-wrap: wrap;
+}
+
+.btn-center button,
+.btn-center a {
+  width: 220px;
+}
+
+</style>
+
 </head>
 
 <body class="text-center">
 
 <div class="cover-container d-flex h-100 p-3 mx-auto flex-column">
 
-  <!-- TOPO -->
-  <header class="masthead mb-auto">
-    <div class="inner">
+<!-- TOPO -->
+<header class="masthead mb-auto">
 
-      <!-- LOGO -->
-      <a href="painel.php" class="masthead-brand">
-        <img src="imagens/logo.png" alt="Logo Sistema OS">
-      </a>
+<div class="inner">
 
-      <!-- MENU -->
-      <nav class="nav nav-masthead justify-content-center">
+<!-- LOGO -->
+<a href="painel.php"
+class="masthead-brand">
 
-        <!-- Início -->
-        <a class="nav-link" href="painel.php">
-          Início
-        </a>
+<img src="imagens/logo.png"
+alt="Logo Sistema OS">
 
-        <!-- Usuários -->
-        <?php if ($tipo == "admin") : ?>
+</a>
 
-          <div class="nav-item dropdown">
+<!-- MENU -->
+<nav class="nav nav-masthead justify-content-center">
 
-            <a class="nav-link dropdown-toggle"
-               href="#"
-               data-toggle="dropdown">
+<!-- Início -->
+<a class="nav-link"
+href="painel.php">
 
-              Usuários
+Início
 
-            </a>
+</a>
 
-            <div class="dropdown-menu">
+<!-- Usuários -->
+<?php if ($tipo == "admin") : ?>
 
-              <a class="dropdown-item"
-                 href="cadastrarUsuario.php">
+<div class="nav-item dropdown">
 
-                Cadastrar Usuário
+<a class="nav-link dropdown-toggle"
+href="#"
+data-toggle="dropdown">
 
-              </a>
+Usuários
 
-              <a class="dropdown-item"
-                 href="gerenciarUsuarios.php">
+</a>
 
-                Gerenciar Usuários
+<div class="dropdown-menu">
 
-              </a>
+<a class="dropdown-item"
+href="cadastrarUsuario.php">
 
-            </div>
+Cadastrar Usuário
 
-          </div>
+</a>
 
-        <?php endif; ?>
+<a class="dropdown-item"
+href="gerenciarUsuarios.php">
 
-        <!-- Clientes -->
-        <div class="nav-item dropdown">
+Gerenciar Usuários
 
-          <a class="nav-link dropdown-toggle"
-             href="#"
-             data-toggle="dropdown">
+</a>
 
-            Clientes
+</div>
 
-          </a>
+</div>
 
-          <div class="dropdown-menu">
+<?php endif; ?>
 
-            <a class="dropdown-item"
-               href="cadastroCliente.php">
+<!-- Clientes -->
+<div class="nav-item dropdown">
 
-              Cadastrar Cliente
+<a class="nav-link dropdown-toggle"
+href="#"
+data-toggle="dropdown">
 
-            </a>
+Clientes
 
-            <a class="dropdown-item"
-               href="adicionarDepartamento.php">
+</a>
 
-              Adicionar departamento
+<div class="dropdown-menu">
 
-            </a>
+<a class="dropdown-item"
+href="cadastroCliente.php">
 
-          </div>
+Cadastrar Cliente
 
-        </div>
+</a>
 
-        <!-- Ordem de Serviço -->
-        <div class="nav-item dropdown">
+<a class="dropdown-item"
+href="adicionarDepartamento.php">
 
-          <a class="nav-link dropdown-toggle active"
-             href="#"
-             data-toggle="dropdown">
+Adicionar departamento
 
-            Ordem de Serviço
+</a>
 
-          </a>
+</div>
 
-          <div class="dropdown-menu">
+</div>
 
-            <a class="dropdown-item"
-               href="cadastroOS.php">
+<!-- Ordem de Serviço -->
+<div class="nav-item dropdown">
 
-              Cadastrar OS
+<a class="nav-link dropdown-toggle active"
+href="#"
+data-toggle="dropdown">
 
-            </a>
+Ordem de Serviço
 
-            <a class="dropdown-item active"
-               href="consulta.php">
+</a>
 
-              Consultar OS
+<div class="dropdown-menu">
 
-            </a>
+<a class="dropdown-item"
+href="cadastroOS.php">
 
-          </div>
+Cadastrar OS
 
-        </div>
+</a>
 
-        <!-- Sair -->
-        <a class="nav-link text-danger"
-           href="logout.php">
+<a class="dropdown-item active"
+href="consulta.php">
 
-          Sair
+Consultar OS
 
-        </a>
+</a>
 
-      </nav>
+</div>
 
-    </div>
-  </header>
+</div>
 
-  <!-- CONTEÚDO -->
-  <main role="main" class="inner cover">
+<!-- Sair -->
+<a class="nav-link text-danger"
+href="logout.php">
 
-    <div class="box-form">
+Sair
 
-      <h2 class="text-center mb-4">
-        Editar Ordem de Serviço
-      </h2>
+</a>
 
-      <!-- Cliente -->
-      <p>
-        <b>Cliente:</b>
-        <?= $os["cliente_nome"]; ?>
-      </p>
+</nav>
 
-      <!-- Departamento -->
-      <p>
-        <b>Departamento:</b>
-        <?= $os["departamento_nome"]; ?>
-      </p>
+</div>
 
-      <hr>
+</header>
 
-      <form method="POST">
+<!-- CONTEÚDO -->
+<main role="main"
+class="inner cover">
 
-        <!-- Problema -->
-        <label>Problema Relatado:</label>
+<div class="box-form">
 
-        <textarea name="problema"
-                  class="form-control mb-3"
-                  required><?= $os["problema"]; ?></textarea>
+<h2 class="text-center mb-4">
+Editar Ordem de Serviço
+</h2>
 
-        <!-- Serviço -->
-        <label>Serviço Executado:</label>
+<!-- Cliente -->
+<p>
 
-        <textarea name="servico"
-                  class="form-control mb-3"><?= $os["servico"]; ?></textarea>
+<b>Cliente:</b>
 
-        <!-- Valor -->
-        <label>Valor:</label>
+<?= $os["cliente_nome"]; ?>
 
-        <input type="number"
-               step="0.01"
-               name="valor"
-               class="form-control mb-3"
-               value="<?= $os["valor"]; ?>">
+</p>
 
-        <!-- Status -->
-        <label>Status:</label>
+<!-- Departamento -->
+<p>
 
-        <select name="status"
-                class="form-control mb-4">
+<b>Departamento:</b>
 
-          <option value="Aberta"
-            <?= ($os["status"]=="Aberta") ? "selected" : ""; ?>>
+<?= $os["departamento_nome"]; ?>
 
-            Aberta
+</p>
 
-          </option>
+<hr>
 
-          <option value="Fechada"
-            <?= ($os["status"]=="Fechada") ? "selected" : ""; ?>>
+<form method="POST">
 
-            Fechada
+<!-- Problema -->
+<label>
+Problema Relatado:
+</label>
 
-          </option>
+<textarea name="problema"
+class="form-control mb-3"
+required><?= $os["problema"]; ?></textarea>
 
-        </select>
+<!-- Serviço -->
+<label>
+Serviço Executado:
+</label>
 
-        <!-- BOTÕES -->
-        <div class="btn-center">
+<textarea name="servico"
+class="form-control mb-3"><?= $os["servico"]; ?></textarea>
 
-          <button type="submit"
-                  class="btn btn-success btn-lg">
+<!-- Valor -->
+<label>
+Valor:
+</label>
 
-            Salvar
+<input type="number"
+step="0.01"
+name="valor"
+class="form-control mb-3"
+value="<?= $os["valor"]; ?>">
 
-          </button>
+<!-- Status -->
+<label>
+Status:
+</label>
 
-          <a href="consulta.php"
-             class="btn btn-secondary btn-lg">
+<select name="status"
+class="form-control mb-4">
 
-            Voltar
+<option value="Aberta"
+<?= ($os["status"]=="Aberta") ? "selected" : ""; ?>>
 
-          </a>
+Aberta
 
-        </div>
+</option>
 
-      </form>
+<option value="Fechada"
+<?= ($os["status"]=="Fechada") ? "selected" : ""; ?>>
 
-    </div>
+Fechada
 
-  </main>
+</option>
 
-  <!-- RODAPÉ -->
-  <footer class="mastfoot mt-auto">
-    <div class="inner">
-      <p>Sistema OS © 2026</p>
-    </div>
-  </footer>
+</select>
+
+<!-- BOTÕES -->
+<div class="btn-center">
+
+<button type="submit"
+class="btn btn-success btn-lg">
+
+Salvar
+
+</button>
+
+<a href="consulta.php"
+class="btn btn-secondary btn-lg">
+
+Voltar
+
+</a>
+
+</div>
+
+</form>
+
+</div>
+
+</main>
+
+<!-- RODAPÉ -->
+<footer class="mastfoot mt-auto">
+
+<div class="inner">
+
+<p>
+Sistema OS © 2026
+</p>
+
+</div>
+
+</footer>
 
 </div>
 
