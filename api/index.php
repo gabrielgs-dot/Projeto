@@ -1,6 +1,7 @@
 <?php
 session_start();
-include("conexao.php");
+
+require_once __DIR__ . "/conexao.php";
 
 $erro = "";
 
@@ -12,17 +13,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = $_POST["email"];
     $senha = $_POST["senha"];
 
-    // Busca usuário pelo email
-    $sql = "SELECT * FROM usuarios WHERE email = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("s", $email);
-    $stmt->execute();
+    // PostgreSQL
+    $sql = "SELECT * FROM usuarios WHERE email = $1";
 
-    $result = $stmt->get_result();
+    $result = pg_query_params($conn, $sql, array($email));
 
-    if ($result->num_rows == 1) {
+    if ($result && pg_num_rows($result) == 1) {
 
-        $usuario = $result->fetch_assoc();
+        $usuario = pg_fetch_assoc($result);
 
         // Verifica senha
         if (password_verify($senha, $usuario["senha"])) {
@@ -32,9 +30,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $_SESSION["nome"]   = $usuario["nome"];
             $_SESSION["tipo"]   = $usuario["tipo"];
 
-           if ($usuario["tipo"] == "admin") {
-    $_SESSION["admin"] = $usuario["id"]; // guarda o ID real do admin
-}
+            if ($usuario["tipo"] == "admin") {
+                $_SESSION["admin"] = $usuario["id"];
+            }
 
             header("Location: painel.php");
             exit();
@@ -59,7 +57,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <link rel="stylesheet"
           href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
 
-    <!-- Estilo para centralizar e criar quadrado -->
     <style>
         body {
             background: #f2f2f2;
