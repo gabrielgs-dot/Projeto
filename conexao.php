@@ -10,6 +10,6 @@ $conn = pg_connect("
 ");
 
 if (!$conn) {
-    die("Erro na conexão");
+    die("Erro na conexão com PostgreSQL");
 }
 ?>
