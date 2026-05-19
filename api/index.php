@@ -1,67 +1,21 @@
 <?php
 session_start();
-include("conexao.php");
 
-/* Mostrar erros */
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+/* ============================
+   VERIFICA LOGIN
+============================ */
+if (!isset($_SESSION["logado"])) {
 
-/* Se já estiver logado */
-if (isset($_SESSION["logado"])) {
-    header("Location: painel.php");
+    header("Location: index.php");
     exit();
 }
 
-$erro = "";
+/* Conexão */
+include("conexao.php");
 
-/* LOGIN */
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-
-    $email = trim($_POST["email"]);
-    $senha = trim($_POST["senha"]);
-
-    /* PostgreSQL */
-    $sql = "SELECT * FROM usuarios WHERE email = $1 LIMIT 1";
-
-    $result = pg_query_params($conn, $sql, array($email));
-
-    if (!$result) {
-        die("Erro na consulta: " . pg_last_error($conn));
-    }
-
-    /* Usuário encontrado */
-    if (pg_num_rows($result) > 0) {
-
-        $usuario = pg_fetch_assoc($result);
-
-        /* Verifica senha */
-        if (password_verify($senha, $usuario["senha"])) {
-
-            $_SESSION["logado"] = true;
-            $_SESSION["id"]     = $usuario["id"];
-            $_SESSION["nome"]   = $usuario["nome"];
-            $_SESSION["tipo"]   = $usuario["tipo"];
-
-            /* Se admin */
-            if ($usuario["tipo"] == "admin") {
-                $_SESSION["admin"] = $usuario["id"];
-            }
-
-            header("Location: painel.php");
-            exit();
-
-        } else {
-
-            $erro = "Senha incorreta.";
-
-        }
-
-    } else {
-
-        $erro = "Usuário não encontrado.";
-
-    }
-}
+/* Dados usuário */
+$nome = $_SESSION["nome"];
+$tipo = $_SESSION["tipo"];
 ?>
 
 <!doctype html>
@@ -69,118 +23,267 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <head>
     <meta charset="utf-8">
 
-    <title>Login - Sistema OS</title>
+    <title>Painel - Sistema OS</title>
 
     <!-- Bootstrap -->
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css">
 
+    <!-- Cover -->
+    <link rel="stylesheet"
+          href="https://getbootstrap.com/docs/4.0/examples/cover/cover.css">
+
     <style>
 
-        body {
-            background: #343a40;
+        /* Centralizar menu */
+        .nav-masthead {
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
-        .login-box {
-
-            background: white;
-
-            padding: 40px;
-
-            border-radius: 15px;
-
-            margin-top: 100px;
-
-            box-shadow: 0px 0px 20px rgba(0,0,0,0.4);
-        }
-
-        .logo {
+        /* Dropdown escuro */
+        .dropdown-menu {
+            background-color: #222;
+            border: 1px solid #444;
             text-align: center;
+        }
+
+        .dropdown-item {
+            color: white;
+        }
+
+        .dropdown-item:hover {
+            background-color: #444;
+            color: white;
+        }
+
+        /* Espaçamento links */
+        .nav-link {
+            margin: 0 10px;
+        }
+
+        /* Logo */
+        .masthead-brand img {
+            height: 110px;
+            margin-bottom: 15px;
+        }
+
+        /* Caixa central */
+        .box {
+            background: white;
+            color: black;
+            padding: 40px;
+            border-radius: 15px;
+            max-width: 800px;
+            margin: auto;
+            text-align: center;
+
+            box-shadow: 0px 0px 25px rgba(0,0,0,0.4);
+        }
+
+        .box h1 {
+            font-size: 40px;
             margin-bottom: 20px;
         }
 
-        .logo img {
-            width: 150px;
+        .box p {
+            font-size: 18px;
         }
 
     </style>
 </head>
 
-<body>
+<body class="text-center">
 
-<div class="container">
+<div class="cover-container d-flex h-100 p-3 mx-auto flex-column">
 
-    <div class="row justify-content-center">
+    <!-- TOPO -->
+    <header class="masthead mb-auto">
 
-        <div class="col-md-5">
+        <div class="inner">
 
-            <div class="login-box">
+            <!-- LOGO -->
+            <a href="painel.php" class="masthead-brand">
 
-                <!-- Logo -->
-                <div class="logo">
+                <img src="imagens/logo.png" alt="Logo Sistema OS">
 
-                    <img src="imagens/logo.png" alt="Logo">
+            </a>
 
-                </div>
+            <!-- MENU -->
+            <nav class="nav nav-masthead justify-content-center">
 
-                <h3 class="text-center mb-4">
+                <!-- Início -->
+                <a class="nav-link active" href="painel.php">
 
-                    Sistema OS
+                    Início
 
-                </h3>
+                </a>
 
-                <!-- Erro -->
-                <?php if (!empty($erro)): ?>
+                <!-- Usuários -->
+                <?php if ($tipo == "admin"): ?>
 
-                    <div class="alert alert-danger">
+                    <div class="nav-item dropdown">
 
-                        <?= $erro ?>
+                        <a class="nav-link dropdown-toggle"
+                           href="#"
+                           data-toggle="dropdown">
+
+                            Usuários
+
+                        </a>
+
+                        <div class="dropdown-menu">
+
+                            <a class="dropdown-item"
+                               href="cadastrarUsuario.php">
+
+                                Cadastrar Usuário
+
+                            </a>
+
+                            <a class="dropdown-item"
+                               href="gerenciarUsuarios.php">
+
+                                Gerenciar Usuários
+
+                            </a>
+
+                        </div>
 
                     </div>
 
                 <?php endif; ?>
 
-                <!-- Form -->
-                <form method="POST">
+                <!-- Clientes -->
+                <div class="nav-item dropdown">
 
-                    <div class="form-group">
+                    <a class="nav-link dropdown-toggle"
+                       href="#"
+                       data-toggle="dropdown">
 
-                        <label>Email</label>
+                        Clientes
 
-                        <input type="email"
-                               name="email"
-                               class="form-control"
-                               required>
+                    </a>
+
+                    <div class="dropdown-menu">
+
+                        <a class="dropdown-item"
+                           href="cadastroCliente.php">
+
+                            Cadastrar Cliente
+
+                        </a>
+
+                        <a class="dropdown-item"
+                           href="adicionarDepartamento.php">
+
+                            Adicionar departamento
+
+                        </a>
 
                     </div>
 
-                    <div class="form-group">
+                </div>
 
-                        <label>Senha</label>
+                <!-- Ordem Serviço -->
+                <div class="nav-item dropdown">
 
-                        <input type="password"
-                               name="senha"
-                               class="form-control"
-                               required>
+                    <a class="nav-link dropdown-toggle"
+                       href="#"
+                       data-toggle="dropdown">
+
+                        Ordem de Serviço
+
+                    </a>
+
+                    <div class="dropdown-menu">
+
+                        <a class="dropdown-item"
+                           href="cadastroOS.php">
+
+                            Cadastrar OS
+
+                        </a>
+
+                        <a class="dropdown-item"
+                           href="consulta.php">
+
+                            Consultar OS
+
+                        </a>
 
                     </div>
 
-                    <button type="submit"
-                            class="btn btn-dark btn-block btn-lg">
+                </div>
 
-                        Entrar
+                <!-- Logout -->
+                <a class="nav-link text-danger"
+                   href="logout.php">
 
-                    </button>
+                    Sair
 
-                </form>
+                </a>
 
-            </div>
+            </nav>
 
         </div>
 
-    </div>
+    </header>
+
+    <!-- CONTEÚDO -->
+    <main role="main" class="inner cover">
+
+        <div class="box">
+
+            <h1>
+
+                Bem-vindo, <?= $nome ?>
+
+            </h1>
+
+            <p>
+
+                Tipo de usuário:
+                <b><?= ucfirst($tipo) ?></b>
+
+            </p>
+
+            <hr>
+
+            <p>
+
+                Sistema de Ordem de Serviço funcionando com PostgreSQL.
+
+            </p>
+
+        </div>
+
+    </main>
+
+    <!-- RODAPÉ -->
+    <footer class="mastfoot mt-auto">
+
+        <div class="inner">
+
+            <p>
+
+                Sistema OS © 2026 - GGS
+
+            </p>
+
+        </div>
+
+    </footer>
 
 </div>
+
+<!-- Scripts -->
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
 
 </body>
 </html>
