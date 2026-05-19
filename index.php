@@ -12,17 +12,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = $_POST["email"];
     $senha = $_POST["senha"];
 
-    // Busca usuário pelo email
-    $sql = "SELECT * FROM usuarios WHERE email = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("s", $email);
-    $stmt->execute();
+    // PostgreSQL
+    $sql = "SELECT * FROM usuarios WHERE email = $1";
 
-    $result = $stmt->get_result();
+    $result = pg_query_params($conn, $sql, array($email));
 
-    if ($result->num_rows == 1) {
+    if ($result && pg_num_rows($result) == 1) {
 
-        $usuario = $result->fetch_assoc();
+        $usuario = pg_fetch_assoc($result);
 
         // Verifica senha
         if (password_verify($senha, $usuario["senha"])) {
@@ -32,9 +29,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $_SESSION["nome"]   = $usuario["nome"];
             $_SESSION["tipo"]   = $usuario["tipo"];
 
-           if ($usuario["tipo"] == "admin") {
-    $_SESSION["admin"] = $usuario["id"]; // guarda o ID real do admin
-}
+            if ($usuario["tipo"] == "admin") {
+                $_SESSION["admin"] = $usuario["id"];
+            }
 
             header("Location: painel.php");
             exit();
@@ -55,11 +52,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta charset="utf-8">
     <title>Login - Sistema OS</title>
 
-    <!-- Bootstrap -->
     <link rel="stylesheet"
           href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
 
-    <!-- Estilo para centralizar e criar quadrado -->
     <style>
         body {
             background: #f2f2f2;
@@ -94,19 +89,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <div class="login-box">
 
-    <!-- Logo -->
     <img src="imagens/logo.png" alt="Logo">
 
     <h4 class="mb-4">Login do Sistema</h4>
 
-    <!-- Mensagem de erro -->
     <?php if(!empty($erro)) : ?>
         <div class="alert alert-danger">
             <?php echo $erro; ?>
         </div>
     <?php endif; ?>
 
-    <!-- Formulário -->
     <form method="POST">
 
         <input type="email"
