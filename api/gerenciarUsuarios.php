@@ -20,10 +20,13 @@ if (isset($_GET["excluir"])) {
     // Admin não pode excluir ele mesmo
     if ($idExcluir != $_SESSION["admin"]) {
 
-        $sql = "DELETE FROM usuarios WHERE id=?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("i", $idExcluir);
-        $stmt->execute();
+        $sql = "DELETE FROM usuarios WHERE id = $1";
+
+        $result = pg_query_params(
+            $conn,
+            $sql,
+            array($idExcluir)
+        );
     }
 
     header("Location: gerenciarUsuarios.php");
@@ -40,13 +43,19 @@ if (isset($_POST["salvar"])) {
     $email = $_POST["email"];
     $tipo  = $_POST["tipo"];
 
-    $sql = "UPDATE usuarios 
-            SET nome=?, email=?, tipo=? 
-            WHERE id=?";
+    $sql = "
+        UPDATE usuarios
+        SET nome = $1,
+            email = $2,
+            tipo = $3
+        WHERE id = $4
+    ";
 
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("sssi", $nome, $email, $tipo, $id);
-    $stmt->execute();
+    $result = pg_query_params(
+        $conn,
+        $sql,
+        array($nome, $email, $tipo, $id)
+    );
 
     header("Location: gerenciarUsuarios.php");
     exit();
@@ -55,7 +64,9 @@ if (isset($_POST["salvar"])) {
 /* ============================
    ✅ LISTAR USUÁRIOS
 ============================ */
-$result = $conn->query("SELECT * FROM usuarios ORDER BY id DESC");
+$sqlUsuarios = "SELECT * FROM usuarios ORDER BY id DESC";
+
+$result = pg_query($conn, $sqlUsuarios);
 ?>
 
 <!doctype html>
@@ -74,19 +85,16 @@ $result = $conn->query("SELECT * FROM usuarios ORDER BY id DESC");
 
     <style>
 
-        /* Corrige largura do cover */
         .cover-container {
             max-width: 100% !important;
         }
 
-        /* Centralizar menu */
         .nav-masthead {
             display: flex;
             justify-content: center;
             align-items: center;
         }
 
-        /* Dropdown escuro */
         .dropdown-menu {
             background-color: #222;
             border: 1px solid #444;
@@ -102,18 +110,15 @@ $result = $conn->query("SELECT * FROM usuarios ORDER BY id DESC");
             color: white;
         }
 
-        /* Espaçamento links */
         .nav-link {
             margin: 0 10px;
         }
 
-        /* Logo */
         .masthead-brand img {
             height: 110px;
             margin-bottom: 15px;
         }
 
-        /* Caixa principal */
         .box {
             background: white;
             color: black;
@@ -128,7 +133,6 @@ $result = $conn->query("SELECT * FROM usuarios ORDER BY id DESC");
             box-shadow: 0px 0px 25px rgba(0,0,0,0.4);
         }
 
-        /* Título */
         .title {
             font-size: 32px;
             font-weight: bold;
@@ -136,7 +140,6 @@ $result = $conn->query("SELECT * FROM usuarios ORDER BY id DESC");
             margin-bottom: 35px;
         }
 
-        /* Tabela */
         table {
             width: 100%;
             background: white;
@@ -149,22 +152,18 @@ $result = $conn->query("SELECT * FROM usuarios ORDER BY id DESC");
             white-space: nowrap;
         }
 
-        /* Inputs */
         .form-control {
             min-width: 140px;
         }
 
-        /* Select */
         select.form-control {
             min-width: 120px;
         }
 
-        /* Botões */
         .btn {
             white-space: nowrap;
         }
 
-        /* Responsividade */
         .table-responsive {
             overflow-x: auto;
         }
@@ -188,7 +187,6 @@ $result = $conn->query("SELECT * FROM usuarios ORDER BY id DESC");
             <!-- MENU -->
             <nav class="nav nav-masthead justify-content-center">
 
-                <!-- Início -->
                 <a class="nav-link" href="painel.php">
                     Início
                 </a>
@@ -329,7 +327,7 @@ $result = $conn->query("SELECT * FROM usuarios ORDER BY id DESC");
 
                     <tbody>
 
-                    <?php while ($u = $result->fetch_assoc()): ?>
+                    <?php while ($u = pg_fetch_assoc($result)): ?>
 
                         <tr>
 
@@ -349,7 +347,7 @@ $result = $conn->query("SELECT * FROM usuarios ORDER BY id DESC");
 
                                     <input type="text"
                                            name="nome"
-                                           value="<?= $u["nome"] ?>"
+                                           value="<?= htmlspecialchars($u["nome"]) ?>"
                                            class="form-control"
                                            required>
 
@@ -360,7 +358,7 @@ $result = $conn->query("SELECT * FROM usuarios ORDER BY id DESC");
 
                                     <input type="email"
                                            name="email"
-                                           value="<?= $u["email"] ?>"
+                                           value="<?= htmlspecialchars($u["email"]) ?>"
                                            class="form-control"
                                            required>
 
@@ -373,14 +371,14 @@ $result = $conn->query("SELECT * FROM usuarios ORDER BY id DESC");
                                             class="form-control">
 
                                         <option value="usuario"
-                                            <?= ($u["tipo"]=="usuario") ? "selected" : "" ?>>
+                                            <?= ($u["tipo"] == "usuario") ? "selected" : "" ?>>
 
                                             Funcionário
 
                                         </option>
 
                                         <option value="admin"
-                                            <?= ($u["tipo"]=="admin") ? "selected" : "" ?>>
+                                            <?= ($u["tipo"] == "admin") ? "selected" : "" ?>>
 
                                             Admin
 
