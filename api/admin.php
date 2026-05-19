@@ -1,6 +1,6 @@
 <?php
 
-include("conexao.php");
+require_once __DIR__ . "/conexao.php";
 
 /* ===========================
    DADOS DO ADMIN
@@ -15,13 +15,13 @@ $tipo  = "admin";
    VERIFICA SE JÁ EXISTE
 =========================== */
 
-$check = $conn->prepare("SELECT id FROM usuarios WHERE email=?");
-$check->bind_param("s", $email);
-$check->execute();
+$check = pg_query_params(
+    $conn,
+    "SELECT id FROM usuarios WHERE email = $1",
+    array($email)
+);
 
-$result = $check->get_result();
-
-if ($result->num_rows > 0) {
+if ($check && pg_num_rows($check) > 0) {
 
     echo "Admin já existe!";
 
@@ -32,19 +32,15 @@ if ($result->num_rows > 0) {
     =========================== */
 
     $sql = "INSERT INTO usuarios (nome, email, senha, tipo)
-            VALUES (?, ?, ?, ?)";
+            VALUES ($1, $2, $3, $4)";
 
-    $stmt = $conn->prepare($sql);
-
-    $stmt->bind_param(
-        "ssss",
-        $nome,
-        $email,
-        $senha,
-        $tipo
+    $insert = pg_query_params(
+        $conn,
+        $sql,
+        array($nome, $email, $senha, $tipo)
     );
 
-    if ($stmt->execute()) {
+    if ($insert) {
 
         echo "Admin criado com sucesso!<br><br>";
 
@@ -54,8 +50,6 @@ if ($result->num_rows > 0) {
     } else {
 
         echo "Erro ao criar admin.";
-
     }
 }
-
 ?>
