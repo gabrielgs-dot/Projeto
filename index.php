@@ -9,42 +9,55 @@ $erro = "";
 ============================ */
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
-    $email = $_POST["email"];
+    $email = trim($_POST["email"]);
     $senha = $_POST["senha"];
 
-    // Busca usuário pelo email
-    $sql = "SELECT * FROM usuarios WHERE email = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("s", $email);
-    $stmt->execute();
+    if (!empty($email) && !empty($senha)) {
 
-    $result = $stmt->get_result();
+        $sql = "SELECT * FROM usuarios WHERE email = ?";
+        $stmt = $conn->prepare($sql);
 
-    if ($result->num_rows == 1) {
+        if ($stmt) {
 
-        $usuario = $result->fetch_assoc();
+            $stmt->bind_param("s", $email);
+            $stmt->execute();
 
-        // Verifica senha
-        if (password_verify($senha, $usuario["senha"])) {
+            $result = $stmt->get_result();
 
-            $_SESSION["logado"] = true;
-            $_SESSION["id"]     = $usuario["id"];
-            $_SESSION["nome"]   = $usuario["nome"];
-            $_SESSION["tipo"]   = $usuario["tipo"];
+            if ($result && $result->num_rows === 1) {
 
-           if ($usuario["tipo"] == "admin") {
-    $_SESSION["admin"] = $usuario["id"]; // guarda o ID real do admin
-}
+                $usuario = $result->fetch_assoc();
 
-            header("Location: painel.php");
-            exit();
+                if (password_verify($senha, $usuario["senha"])) {
+
+                    $_SESSION["logado"] = true;
+                    $_SESSION["id"]     = $usuario["id"];
+                    $_SESSION["nome"]   = $usuario["nome"];
+                    $_SESSION["tipo"]   = $usuario["tipo"];
+
+                    if ($usuario["tipo"] === "admin") {
+                        $_SESSION["admin"] = $usuario["id"];
+                    }
+
+                    header("Location: painel.php");
+                    exit();
+
+                } else {
+                    $erro = "Senha incorreta!";
+                }
+
+            } else {
+                $erro = "Usuário não encontrado!";
+            }
+
+            $stmt->close();
 
         } else {
-            $erro = "Senha incorreta!";
+            $erro = "Erro na preparação da consulta SQL.";
         }
 
     } else {
-        $erro = "Usuário não encontrado!";
+        $erro = "Preencha todos os campos!";
     }
 }
 ?>
@@ -55,11 +68,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta charset="utf-8">
     <title>Login - Sistema OS</title>
 
-    <!-- Bootstrap -->
     <link rel="stylesheet"
           href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
 
-    <!-- Estilo para centralizar e criar quadrado -->
     <style>
         body {
             background: #f2f2f2;
@@ -94,19 +105,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <div class="login-box">
 
-    <!-- Logo -->
     <img src="imagens/logo.png" alt="Logo">
 
     <h4 class="mb-4">Login do Sistema</h4>
 
-    <!-- Mensagem de erro -->
-    <?php if(!empty($erro)) : ?>
+    <?php if (!empty($erro)) : ?>
         <div class="alert alert-danger">
-            <?php echo $erro; ?>
+            <?= $erro; ?>
         </div>
     <?php endif; ?>
 
-    <!-- Formulário -->
     <form method="POST">
 
         <input type="email"
