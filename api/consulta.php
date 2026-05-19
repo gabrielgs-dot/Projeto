@@ -1,9 +1,12 @@
 <?php
+
 session_start();
-include("conexao.php");
+
+require_once __DIR__ . "/conexao.php";
 
 /* Verifica login */
 if(!isset($_SESSION["tipo"])) {
+
     header("Location: index.php");
     exit();
 }
@@ -14,428 +17,476 @@ $nome = $_SESSION["nome"];
 /* Pesquisa */
 $busca = $_GET["busca"] ?? "";
 
-/* SQL Consulta */
-$sql = "SELECT os.*, 
-               c.nome AS cliente_nome,
-               d.nome AS departamento_nome
-        FROM ordens_servico os
-        LEFT JOIN clientes c ON os.cliente_id = c.id
-        LEFT JOIN departamentos d ON os.departamento_id = d.id";
+/* ===============================
+   CONSULTA SQL
+================================ */
 
-/* Se buscar OS pelo ID */
-if(!empty($busca)){
-    $sql .= " WHERE os.id = '$busca'";
+$sql = "
+    SELECT
+        os.*,
+        c.nome AS cliente_nome,
+        d.nome AS departamento_nome
+    FROM ordens_servico os
+    LEFT JOIN clientes c
+        ON os.cliente_id = c.id
+    LEFT JOIN departamentos d
+        ON os.departamento_id = d.id
+";
+
+$params = array();
+
+/* Buscar por ID da OS */
+if(!empty($busca)) {
+
+    $sql .= " WHERE os.id = $1";
+
+    $params[] = $busca;
 }
 
 $sql .= " ORDER BY os.id DESC";
 
-$result = $conn->query($sql);
+/* Executa consulta */
+if(!empty($params)) {
+
+    $result = pg_query_params(
+        $conn,
+        $sql,
+        $params
+    );
+
+} else {
+
+    $result = pg_query(
+        $conn,
+        $sql
+    );
+}
 ?>
 
 <!doctype html>
 <html lang="pt-br">
+
 <head>
-  <meta charset="utf-8">
-  <title>Consultar OS - Sistema OS</title>
 
-  <!-- Bootstrap -->
-  <link rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css">
+<meta charset="utf-8">
 
-  <!-- Cover Template -->
-  <link rel="stylesheet"
-        href="https://getbootstrap.com/docs/4.0/examples/cover/cover.css">
+<title>
+Consultar OS - Sistema OS
+</title>
 
-  <style>
+<!-- Bootstrap -->
+<link rel="stylesheet"
+href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css">
 
-    /* Corrige largura */
-    .cover-container {
-      max-width: 100% !important;
-    }
+<!-- Cover Template -->
+<link rel="stylesheet"
+href="https://getbootstrap.com/docs/4.0/examples/cover/cover.css">
 
-    /* Centralizar menu */
-    .nav-masthead {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
+<style>
 
-    /* Dropdown menu escuro */
-    .dropdown-menu {
-      background-color: #222;
-      border: 1px solid #444;
-      text-align: center;
-    }
+.cover-container {
+  max-width: 100% !important;
+}
 
-    .dropdown-item {
-      color: white;
-    }
+.nav-masthead {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
-    .dropdown-item:hover {
-      background-color: #444;
-      color: white;
-    }
+.dropdown-menu {
+  background-color: #222;
+  border: 1px solid #444;
+  text-align: center;
+}
 
-    /* Espaçamento links */
-    .nav-link {
-      margin: 0 10px;
-    }
+.dropdown-item {
+  color: white;
+}
 
-    /* Logo */
-    .masthead-brand img {
-      height: 110px;
-      margin-bottom: 15px;
-    }
+.dropdown-item:hover {
+  background-color: #444;
+  color: white;
+}
 
-    /* Caixa branca */
-    .box-form {
-      background: white;
-      color: black;
-      padding: 40px;
-      border-radius: 15px;
-      width: 98%;
-      max-width: 1800px;
-      margin: auto;
-      text-align: left;
-      box-shadow: 0px 0px 25px rgba(0,0,0,0.4);
-    }
+.nav-link {
+  margin: 0 10px;
+}
 
-    /* Tabela */
-    table {
-      width: 100%;
-      table-layout: auto;
-    }
+.masthead-brand img {
+  height: 110px;
+  margin-bottom: 15px;
+}
 
-    th,
-    td {
-      font-size: 14px;
-      vertical-align: middle !important;
-      text-align: center;
-      white-space: normal;
-    }
+.box-form {
+  background: white;
+  color: black;
+  padding: 40px;
+  border-radius: 15px;
+  width: 98%;
+  max-width: 1800px;
+  margin: auto;
+  text-align: left;
+  box-shadow: 0px 0px 25px rgba(0,0,0,0.4);
+}
 
-    /* Coluna ações */
-    .acoes {
-      width: 240px;
-    }
+table {
+  width: 100%;
+  table-layout: auto;
+}
 
-    /* Botões menores */
-    .btn-sm {
-      width: 75px;
-      font-size: 13px;
-      padding: 5px;
-      margin: 2px;
-    }
+th,
+td {
+  font-size: 14px;
+  vertical-align: middle !important;
+  text-align: center;
+  white-space: normal;
+}
 
-    /* Pesquisa */
-    .form-inline {
-      gap: 10px;
-    }
+.acoes {
+  width: 240px;
+}
 
-    /* Status */
-    .badge {
-      font-size: 13px;
-      padding: 8px 12px;
-    }
+.btn-sm {
+  width: 75px;
+  font-size: 13px;
+  padding: 5px;
+  margin: 2px;
+}
 
-  </style>
+.form-inline {
+  gap: 10px;
+}
+
+.badge {
+  font-size: 13px;
+  padding: 8px 12px;
+}
+
+</style>
+
 </head>
 
 <body class="text-center">
 
 <div class="cover-container d-flex h-100 p-3 mx-auto flex-column">
 
-  <!-- TOPO -->
-  <header class="masthead mb-auto">
-    <div class="inner">
+<!-- TOPO -->
+<header class="masthead mb-auto">
 
-      <!-- LOGO -->
-      <a href="painel.php" class="masthead-brand">
-        <img src="imagens/logo.png" alt="Logo Sistema OS">
-      </a>
+<div class="inner">
 
-      <!-- MENU -->
-      <nav class="nav nav-masthead justify-content-center">
+<!-- LOGO -->
+<a href="painel.php"
+class="masthead-brand">
 
-        <!-- Início -->
-        <a class="nav-link" href="painel.php">
-          Início
-        </a>
+<img src="imagens/logo.png"
+alt="Logo Sistema OS">
 
-        <!-- Usuários -->
-        <?php if($tipo == "admin"): ?>
+</a>
 
-          <div class="nav-item dropdown">
+<!-- MENU -->
+<nav class="nav nav-masthead justify-content-center">
 
-            <a class="nav-link dropdown-toggle"
-               href="#"
-               data-toggle="dropdown">
+<!-- Início -->
+<a class="nav-link"
+href="painel.php">
 
-              Usuários
+Início
 
-            </a>
+</a>
 
-            <div class="dropdown-menu">
+<!-- Usuários -->
+<?php if($tipo == "admin"): ?>
 
-              <a class="dropdown-item"
-                 href="cadastrarUsuario.php">
+<div class="nav-item dropdown">
 
-                Cadastrar Usuário
+<a class="nav-link dropdown-toggle"
+href="#"
+data-toggle="dropdown">
 
-              </a>
+Usuários
 
-              <a class="dropdown-item"
-                 href="gerenciarUsuarios.php">
+</a>
 
-                Gerenciar Usuários
+<div class="dropdown-menu">
 
-              </a>
+<a class="dropdown-item"
+href="cadastrarUsuario.php">
 
-            </div>
+Cadastrar Usuário
 
-          </div>
+</a>
 
-        <?php endif; ?>
+<a class="dropdown-item"
+href="gerenciarUsuarios.php">
 
-        <!-- Clientes -->
-        <div class="nav-item dropdown">
+Gerenciar Usuários
 
-          <a class="nav-link dropdown-toggle"
-             href="#"
-             data-toggle="dropdown">
-
-            Clientes
-
-          </a>
-
-          <div class="dropdown-menu">
-
-            <a class="dropdown-item"
-               href="cadastroCliente.php">
-
-              Cadastrar Cliente
-
-            </a>
-
-            <a class="dropdown-item"
-               href="adicionarDepartamento.php">
-
-              Adicionar departamento
-
-            </a>
-
-          </div>
-
-        </div>
-
-        <!-- Ordem de Serviço -->
-        <div class="nav-item dropdown">
-
-          <a class="nav-link dropdown-toggle active"
-             href="#"
-             data-toggle="dropdown">
-
-            Ordem de Serviço
-
-          </a>
-
-          <div class="dropdown-menu">
-
-            <a class="dropdown-item"
-               href="cadastroOS.php">
-
-              Cadastrar OS
-
-            </a>
-
-            <a class="dropdown-item active"
-               href="consulta.php">
-
-              Consultar OS
-
-            </a>
-
-          </div>
-
-        </div>
-
-        <!-- Sair -->
-        <a class="nav-link text-danger"
-           href="logout.php">
-
-          Sair
-
-        </a>
-
-      </nav>
-
-    </div>
-  </header>
-
-  <!-- CONTEÚDO -->
-  <main role="main" class="inner cover">
-
-    <div class="box-form">
-
-      <h2 class="text-center mb-4">
-        Consulta de Ordens de Serviço
-      </h2>
-
-      <!-- PESQUISA -->
-      <form method="GET"
-            class="form-inline justify-content-center mb-4">
-
-        <input type="number"
-               name="busca"
-               class="form-control"
-               placeholder="Digite o número da OS"
-               value="<?php echo $busca; ?>">
-
-        <button class="btn btn-dark"
-                type="submit">
-
-          Pesquisar
-
-        </button>
-
-        <a href="consulta.php"
-           class="btn btn-secondary">
-
-          Limpar
-
-        </a>
-
-      </form>
-
-      <!-- TABELA -->
-      <div class="table-responsive">
-
-        <table class="table table-bordered table-hover">
-
-          <thead class="thead-dark">
-
-            <tr>
-
-              <th>ID</th>
-              <th>Cliente</th>
-              <th>Departamento</th>
-              <th>Status</th>
-              <th>Data</th>
-              <th class="acoes">Ações</th>
-
-            </tr>
-
-          </thead>
-
-          <tbody>
-
-          <?php if($result->num_rows > 0): ?>
-
-            <?php while($os = $result->fetch_assoc()): ?>
-
-              <tr>
-
-                <td><?= $os["id"] ?></td>
-
-                <td><?= $os["cliente_nome"] ?></td>
-
-                <td>
-                  <?= $os["departamento_nome"] ?? "Não informado" ?>
-                </td>
-
-                <!-- STATUS COLORIDO -->
-                <td>
-
-                  <?php if($os["status"] == "Aberta"): ?>
-
-                    <span class="badge badge-success">
-                      Aberta
-                    </span>
-
-                  <?php elseif($os["status"] == "Fechada"): ?>
-
-                    <span class="badge badge-danger">
-                      Fechada
-                    </span>
-
-                  <?php else: ?>
-
-                    <span class="badge badge-secondary">
-                      <?= $os["status"] ?>
-                    </span>
-
-                  <?php endif; ?>
-
-                </td>
-
-                <td>
-                  <?= date("d/m/Y H:i", strtotime($os["data_abertura"])) ?>
-                </td>
-
-                <td>
-
-                  <a href="visualizarOS.php?id=<?= $os["id"] ?>"
-                     class="btn btn-primary btn-sm">
-
-                    Ver
-
-                  </a>
-
-                  <a href="editarOS.php?id=<?= $os["id"] ?>"
-                     class="btn btn-warning btn-sm">
-
-                    Editar
-
-                  </a>
-
-                  <a href="excluirOS.php?id=<?= $os["id"] ?>"
-                     class="btn btn-danger btn-sm"
-                     onclick="return confirm('Deseja excluir esta OS?');">
-
-                    Excluir
-
-                  </a>
-
-                </td>
-
-              </tr>
-
-            <?php endwhile; ?>
-
-          <?php else: ?>
-
-            <tr>
-
-              <td colspan="6">
-
-                Nenhuma OS encontrada.
-
-              </td>
-
-            </tr>
-
-          <?php endif; ?>
-
-          </tbody>
-
-        </table>
-
-      </div>
-
-    </div>
-
-  </main>
-
-  <!-- RODAPÉ -->
-  <footer class="mastfoot mt-auto">
-    <div class="inner">
-      <p>Sistema OS © 2026 - GGS</p>
-    </div>
-  </footer>
+</a>
 
 </div>
 
-<!-- Scripts Bootstrap -->
+</div>
+
+<?php endif; ?>
+
+<!-- Clientes -->
+<div class="nav-item dropdown">
+
+<a class="nav-link dropdown-toggle"
+href="#"
+data-toggle="dropdown">
+
+Clientes
+
+</a>
+
+<div class="dropdown-menu">
+
+<a class="dropdown-item"
+href="cadastroCliente.php">
+
+Cadastrar Cliente
+
+</a>
+
+<a class="dropdown-item"
+href="adicionarDepartamento.php">
+
+Adicionar departamento
+
+</a>
+
+</div>
+
+</div>
+
+<!-- Ordem de Serviço -->
+<div class="nav-item dropdown">
+
+<a class="nav-link dropdown-toggle active"
+href="#"
+data-toggle="dropdown">
+
+Ordem de Serviço
+
+</a>
+
+<div class="dropdown-menu">
+
+<a class="dropdown-item"
+href="cadastroOS.php">
+
+Cadastrar OS
+
+</a>
+
+<a class="dropdown-item active"
+href="consulta.php">
+
+Consultar OS
+
+</a>
+
+</div>
+
+</div>
+
+<!-- Sair -->
+<a class="nav-link text-danger"
+href="logout.php">
+
+Sair
+
+</a>
+
+</nav>
+
+</div>
+
+</header>
+
+<!-- CONTEÚDO -->
+<main role="main"
+class="inner cover">
+
+<div class="box-form">
+
+<h2 class="text-center mb-4">
+Consulta de Ordens de Serviço
+</h2>
+
+<!-- PESQUISA -->
+<form method="GET"
+class="form-inline justify-content-center mb-4">
+
+<input type="number"
+name="busca"
+class="form-control"
+placeholder="Digite o número da OS"
+value="<?php echo $busca; ?>">
+
+<button class="btn btn-dark"
+type="submit">
+
+Pesquisar
+
+</button>
+
+<a href="consulta.php"
+class="btn btn-secondary">
+
+Limpar
+
+</a>
+
+</form>
+
+<!-- TABELA -->
+<div class="table-responsive">
+
+<table class="table table-bordered table-hover">
+
+<thead class="thead-dark">
+
+<tr>
+
+<th>ID</th>
+<th>Cliente</th>
+<th>Departamento</th>
+<th>Status</th>
+<th>Data</th>
+<th class="acoes">Ações</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<?php if(pg_num_rows($result) > 0): ?>
+
+<?php while($os = pg_fetch_assoc($result)): ?>
+
+<tr>
+
+<td>
+<?= $os["id"] ?>
+</td>
+
+<td>
+<?= $os["cliente_nome"] ?>
+</td>
+
+<td>
+<?= $os["departamento_nome"] ?? "Não informado" ?>
+</td>
+
+<!-- STATUS -->
+<td>
+
+<?php if($os["status"] == "Aberta"): ?>
+
+<span class="badge badge-success">
+Aberta
+</span>
+
+<?php elseif($os["status"] == "Fechada"): ?>
+
+<span class="badge badge-danger">
+Fechada
+</span>
+
+<?php else: ?>
+
+<span class="badge badge-secondary">
+<?= $os["status"] ?>
+</span>
+
+<?php endif; ?>
+
+</td>
+
+<td>
+
+<?= date(
+    "d/m/Y H:i",
+    strtotime($os["data_abertura"])
+) ?>
+
+</td>
+
+<td>
+
+<a href="visualizarOS.php?id=<?= $os["id"] ?>"
+class="btn btn-primary btn-sm">
+
+Ver
+
+</a>
+
+<a href="editarOS.php?id=<?= $os["id"] ?>"
+class="btn btn-warning btn-sm">
+
+Editar
+
+</a>
+
+<a href="excluirOS.php?id=<?= $os["id"] ?>"
+class="btn btn-danger btn-sm"
+onclick="return confirm('Deseja excluir esta OS?');">
+
+Excluir
+
+</a>
+
+</td>
+
+</tr>
+
+<?php endwhile; ?>
+
+<?php else: ?>
+
+<tr>
+
+<td colspan="6">
+
+Nenhuma OS encontrada.
+
+</td>
+
+</tr>
+
+<?php endif; ?>
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</main>
+
+<!-- RODAPÉ -->
+<footer class="mastfoot mt-auto">
+
+<div class="inner">
+
+<p>
+Sistema OS © 2026 - GGS
+</p>
+
+</div>
+
+</footer>
+
+</div>
+
+<!-- Scripts -->
 <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
