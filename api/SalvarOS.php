@@ -1,5 +1,5 @@
 <?php
-include("conexao.php");
+require_once __DIR__ . "/conexao.php";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
@@ -11,27 +11,50 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     $status = "Aberta";
 
-    $sql = "INSERT INTO ordens_servico
-            (cliente_id, departamento_id, equipamento, problema, servico, status, data_abertura)
-            VALUES (?, ?, ?, ?, ?, ?, NOW())";
+    $sql = "
+        INSERT INTO ordens_servico
+        (
+            cliente_id,
+            departamento_id,
+            equipamento,
+            problema,
+            servico,
+            status,
+            data_abertura
+        )
+        VALUES
+        (
+            $1,
+            $2,
+            $3,
+            $4,
+            $5,
+            $6,
+            NOW()
+        )
+    ";
 
-    $stmt = $conn->prepare($sql);
-
-    $stmt->bind_param(
-        "iissss",
-        $cliente_id,
-        $departamento_id,
-        $equipamento,
-        $problema,
-        $servico,
-        $status
+    $result = pg_query_params(
+        $conn,
+        $sql,
+        array(
+            $cliente_id,
+            $departamento_id,
+            $equipamento,
+            $problema,
+            $servico,
+            $status
+        )
     );
 
-    if ($stmt->execute()) {
+    if ($result) {
+
         header("Location: consulta.php");
         exit();
+
     } else {
-        echo "❌ Erro ao salvar OS: " . $conn->error;
+
+        echo "❌ Erro ao salvar OS.";
     }
 }
 ?>
