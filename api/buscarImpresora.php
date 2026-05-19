@@ -1,5 +1,5 @@
 <?php
-include("conexao.php");
+require_once __DIR__ . "/conexao.php";
 
 $cliente_id = $_GET["cliente_id"];
 
@@ -11,18 +11,19 @@ SELECT
 FROM impressoras
 JOIN departamentos 
     ON impressoras.departamento_id = departamentos.id
-WHERE departamentos.cliente_id = ?
+WHERE departamentos.cliente_id = $1
 ";
 
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("i", $cliente_id);
-$stmt->execute();
-
-$result = $stmt->get_result();
+$result = pg_query_params(
+    $conn,
+    $sql,
+    array($cliente_id)
+);
 
 $impressoras = [];
 
-while($row = $result->fetch_assoc()){
+while($row = pg_fetch_assoc($result)){
+
     $impressoras[] = $row;
 }
 
