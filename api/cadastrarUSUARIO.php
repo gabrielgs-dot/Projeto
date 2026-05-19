@@ -1,10 +1,12 @@
 <?php
 
 session_start();
-include("conexao.php");
+
+require_once __DIR__ . "/conexao.php";
 
 /* ✅ Só admin pode entrar */
 if (!isset($_SESSION["admin"])) {
+
     header("Location: index.php");
     exit();
 }
@@ -12,298 +14,368 @@ if (!isset($_SESSION["admin"])) {
 $tipo = $_SESSION["tipo"];
 
 /* ===========================
-   Cadastrar usuário
+   CADASTRAR USUÁRIO
 =========================== */
+
 if (isset($_POST["cadastrar"])) {
 
-    $nome  = $_POST["nome"];
-    $email = $_POST["email"];
+    $nome      = $_POST["nome"];
+    $email     = $_POST["email"];
     $tipoUser  = $_POST["tipo"];
 
-    /* senha segura */
-    $senha = password_hash($_POST["senha"], PASSWORD_DEFAULT);
+    /* Senha segura */
+    $senha = password_hash(
+        $_POST["senha"],
+        PASSWORD_DEFAULT
+    );
 
-    $sql = "INSERT INTO usuarios (nome, email, senha, tipo)
-            VALUES (?, ?, ?, ?)";
+    $sql = "
+        INSERT INTO usuarios
+        (
+            nome,
+            email,
+            senha,
+            tipo
+        )
+        VALUES
+        (
+            $1,
+            $2,
+            $3,
+            $4
+        )
+    ";
 
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("ssss", $nome, $email, $senha, $tipoUser);
-    $stmt->execute();
+    $result = pg_query_params(
+        $conn,
+        $sql,
+        array(
+            $nome,
+            $email,
+            $senha,
+            $tipoUser
+        )
+    );
 
-    echo "<script>alert('Usuário cadastrado com sucesso!');</script>";
+    if ($result) {
+
+        echo "<script>alert('Usuário cadastrado com sucesso!');</script>";
+
+    } else {
+
+        echo "<script>alert('Erro ao cadastrar usuário!');</script>";
+    }
 }
 ?>
 
 <!doctype html>
 <html lang="pt-br">
+
 <head>
-  <meta charset="utf-8">
-  <title>Cadastrar Usuário</title>
 
-  <!-- Bootstrap -->
-  <link rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css">
+<meta charset="utf-8">
 
-  <!-- Cover Template -->
-  <link rel="stylesheet"
-        href="https://getbootstrap.com/docs/4.0/examples/cover/cover.css">
+<title>
+Cadastrar Usuário
+</title>
 
-  <style>
+<!-- Bootstrap -->
+<link rel="stylesheet"
+href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css">
 
-    /* Centralizar menu */
-    .nav-masthead {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
+<!-- Cover Template -->
+<link rel="stylesheet"
+href="https://getbootstrap.com/docs/4.0/examples/cover/cover.css">
 
-    /* Dropdown menu escuro */
-    .dropdown-menu {
-      background-color: #222;
-      border: 1px solid #444;
-      text-align: center;
-    }
+<style>
 
-    .dropdown-item {
-      color: white;
-    }
+.nav-masthead {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
-    .dropdown-item:hover {
-      background-color: #444;
-      color: white;
-    }
+.dropdown-menu {
+  background-color: #222;
+  border: 1px solid #444;
+  text-align: center;
+}
 
-    /* Espaçamento dos links */
-    .nav-link {
-      margin: 0 10px;
-    }
+.dropdown-item {
+  color: white;
+}
 
-    /* Logo */
-    .masthead-brand img {
-      height: 110px;
-      margin-bottom: 15px;
-    }
+.dropdown-item:hover {
+  background-color: #444;
+  color: white;
+}
 
-    /* Caixa do formulário */
-    .box-form {
-      background: white;
-      color: black;
-      padding: 35px;
-      border-radius: 15px;
-      max-width: 700px;
-      margin: auto;
-      text-align: left;
-      box-shadow: 0px 0px 25px rgba(0,0,0,0.4);
-    }
+.nav-link {
+  margin: 0 10px;
+}
 
-    label {
-      font-weight: bold;
-    }
+.masthead-brand img {
+  height: 110px;
+  margin-bottom: 15px;
+}
 
-    .btn-center {
-      display: flex;
-      justify-content: center;
-      gap: 15px;
-      margin-top: 25px;
-      flex-wrap: wrap;
-    }
+.box-form {
+  background: white;
+  color: black;
+  padding: 35px;
+  border-radius: 15px;
+  max-width: 700px;
+  margin: auto;
+  text-align: left;
+  box-shadow: 0px 0px 25px rgba(0,0,0,0.4);
+}
 
-    .btn-center button,
-    .btn-center a {
-      width: 240px;
-    }
+label {
+  font-weight: bold;
+}
 
-  </style>
+.btn-center {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 25px;
+  flex-wrap: wrap;
+}
+
+.btn-center button,
+.btn-center a {
+  width: 240px;
+}
+
+</style>
+
 </head>
 
 <body class="text-center">
 
 <div class="cover-container d-flex h-100 p-3 mx-auto flex-column">
 
-  <!-- TOPO -->
-  <header class="masthead mb-auto">
-    <div class="inner">
+<!-- TOPO -->
+<header class="masthead mb-auto">
 
-      <!-- LOGO -->
-      <a href="painel.php" class="masthead-brand">
-        <img src="imagens/logo.png" alt="Logo Sistema OS">
-      </a>
+<div class="inner">
 
-      <!-- MENU -->
-      <nav class="nav nav-masthead justify-content-center">
+<!-- LOGO -->
+<a href="painel.php" class="masthead-brand">
 
-        <!-- Início -->
-        <a class="nav-link" href="painel.php">
-          Início
-        </a>
+<img src="imagens/logo.png"
+alt="Logo Sistema OS">
 
-        <!-- Usuários -->
-        <div class="nav-item dropdown">
+</a>
 
-          <a class="nav-link dropdown-toggle active"
-             href="#"
-             data-toggle="dropdown">
-            Usuários
-          </a>
+<!-- MENU -->
+<nav class="nav nav-masthead justify-content-center">
 
-          <div class="dropdown-menu">
+<!-- Início -->
+<a class="nav-link"
+href="painel.php">
 
-            <a class="dropdown-item active"
-               href="cadastrarUsuario.php">
-              Cadastrar Usuário
-            </a>
+Início
 
-            <a class="dropdown-item"
-               href="gerenciarUsuarios.php">
-              Gerenciar Usuários
-            </a>
+</a>
 
-          </div>
-        </div>
+<!-- Usuários -->
+<div class="nav-item dropdown">
 
-        <!-- Clientes -->
-        <div class="nav-item dropdown">
+<a class="nav-link dropdown-toggle active"
+href="#"
+data-toggle="dropdown">
 
-          <a class="nav-link dropdown-toggle"
-             href="#"
-             data-toggle="dropdown">
-            Clientes
-          </a>
+Usuários
 
-          <div class="dropdown-menu">
+</a>
 
-            <a class="dropdown-item"
-               href="cadastroCliente.php">
-              Cadastrar Cliente
-            </a>
+<div class="dropdown-menu">
 
-            <a class="dropdown-item"
-               href="adicionarDepartamento.php">
-              Adicionar departamento
-            </a>
+<a class="dropdown-item active"
+href="cadastrarUsuario.php">
 
-          </div>
-        </div>
+Cadastrar Usuário
 
-        <!-- Ordem de Serviço -->
-        <div class="nav-item dropdown">
+</a>
 
-          <a class="nav-link dropdown-toggle"
-             href="#"
-             data-toggle="dropdown">
-            Ordem de Serviço
-          </a>
+<a class="dropdown-item"
+href="gerenciarUsuarios.php">
 
-          <div class="dropdown-menu">
+Gerenciar Usuários
 
-            <a class="dropdown-item"
-               href="cadastroOS.php">
-              Cadastrar OS
-            </a>
-
-            <a class="dropdown-item"
-               href="consulta.php">
-              Consultar OS
-            </a>
-
-          </div>
-        </div>
-
-        <!-- Sair -->
-        <a class="nav-link text-danger"
-           href="logout.php">
-          Sair
-        </a>
-
-      </nav>
-
-    </div>
-  </header>
-
-  <!-- CONTEÚDO CENTRAL -->
-  <main role="main" class="inner cover">
-
-    <div class="box-form">
-
-      <h2 class="text-center mb-4">
-        Cadastro de Usuário
-      </h2>
-
-      <form method="POST">
-
-        <label>Nome:</label>
-
-        <input type="text"
-               name="nome"
-               class="form-control mb-3"
-               required>
-
-        <label>Email:</label>
-
-        <input type="email"
-               name="email"
-               class="form-control mb-3"
-               required>
-
-        <label>Senha:</label>
-
-        <input type="password"
-               name="senha"
-               class="form-control mb-3"
-               required>
-
-        <label>Tipo de Usuário:</label>
-
-        <select name="tipo"
-                class="form-control mb-4"
-                required>
-
-          <option value="usuario">
-            Funcionário
-          </option>
-
-          <option value="admin">
-            Administrador
-          </option>
-
-        </select>
-
-        <!-- BOTÕES -->
-        <div class="btn-center">
-
-          <button type="submit"
-                  name="cadastrar"
-                  class="btn btn-dark btn-lg">
-
-            Cadastrar
-
-          </button>
-
-          <a href="painel.php"
-             class="btn btn-secondary btn-lg">
-
-            Voltar
-
-          </a>
-
-        </div>
-
-      </form>
-
-    </div>
-
-  </main>
-
-  <!-- RODAPÉ -->
-  <footer class="mastfoot mt-auto">
-    <div class="inner">
-      <p>Sistema OS © 2026</p>
-    </div>
-  </footer>
+</a>
 
 </div>
 
-<!-- Scripts Bootstrap -->
+</div>
+
+<!-- Clientes -->
+<div class="nav-item dropdown">
+
+<a class="nav-link dropdown-toggle"
+href="#"
+data-toggle="dropdown">
+
+Clientes
+
+</a>
+
+<div class="dropdown-menu">
+
+<a class="dropdown-item"
+href="cadastroCliente.php">
+
+Cadastrar Cliente
+
+</a>
+
+<a class="dropdown-item"
+href="adicionarDepartamento.php">
+
+Adicionar departamento
+
+</a>
+
+</div>
+
+</div>
+
+<!-- Ordem de Serviço -->
+<div class="nav-item dropdown">
+
+<a class="nav-link dropdown-toggle"
+href="#"
+data-toggle="dropdown">
+
+Ordem de Serviço
+
+</a>
+
+<div class="dropdown-menu">
+
+<a class="dropdown-item"
+href="cadastroOS.php">
+
+Cadastrar OS
+
+</a>
+
+<a class="dropdown-item"
+href="consulta.php">
+
+Consultar OS
+
+</a>
+
+</div>
+
+</div>
+
+<!-- Sair -->
+<a class="nav-link text-danger"
+href="logout.php">
+
+Sair
+
+</a>
+
+</nav>
+
+</div>
+
+</header>
+
+<!-- CONTEÚDO -->
+<main role="main" class="inner cover">
+
+<div class="box-form">
+
+<h2 class="text-center mb-4">
+Cadastro de Usuário
+</h2>
+
+<form method="POST">
+
+<label>Nome:</label>
+
+<input type="text"
+name="nome"
+class="form-control mb-3"
+required>
+
+<label>Email:</label>
+
+<input type="email"
+name="email"
+class="form-control mb-3"
+required>
+
+<label>Senha:</label>
+
+<input type="password"
+name="senha"
+class="form-control mb-3"
+required>
+
+<label>Tipo de Usuário:</label>
+
+<select name="tipo"
+class="form-control mb-4"
+required>
+
+<option value="usuario">
+Funcionário
+</option>
+
+<option value="admin">
+Administrador
+</option>
+
+</select>
+
+<!-- BOTÕES -->
+<div class="btn-center">
+
+<button type="submit"
+name="cadastrar"
+class="btn btn-dark btn-lg">
+
+Cadastrar
+
+</button>
+
+<a href="painel.php"
+class="btn btn-secondary btn-lg">
+
+Voltar
+
+</a>
+
+</div>
+
+</form>
+
+</div>
+
+</main>
+
+<!-- RODAPÉ -->
+<footer class="mastfoot mt-auto">
+
+<div class="inner">
+
+<p>
+Sistema OS © 2026
+</p>
+
+</div>
+
+</footer>
+
+</div>
+
+<!-- Scripts -->
 <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
