@@ -14,33 +14,36 @@ if (!isset($_GET["id"])) {
     exit();
 }
 
-$id = $_GET["id"];
+$id = intval($_GET["id"]);
 
 /* Buscar OS completa */
-$sql = "SELECT os.*,
-               c.nome AS cliente_nome,
-               c.telefone,
-               c.endereco,
-               d.nome AS departamento_nome,
-               i.modelo AS impressora_modelo,
-               i.patrimonio AS impressora_patrimonio
-        FROM ordens_servico os
-        LEFT JOIN clientes c ON os.cliente_id = c.id
-        LEFT JOIN departamentos d ON os.departamento_id = d.id
-        LEFT JOIN impressoras i ON os.impressora_id = i.id
-        WHERE os.id = ?";
+$sql = "
+SELECT os.*,
+       c.nome AS cliente_nome,
+       c.telefone,
+       c.endereco,
+       d.nome AS departamento_nome,
+       i.modelo AS impressora_modelo,
+       i.patrimonio AS impressora_patrimonio
+FROM ordens_servico os
+LEFT JOIN clientes c ON os.cliente_id = c.id
+LEFT JOIN departamentos d ON os.departamento_id = d.id
+LEFT JOIN impressoras i ON os.impressora_id = i.id
+WHERE os.id = $1
+";
 
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("i", $id);
-$stmt->execute();
-$result = $stmt->get_result();
+$result = pg_query_params(
+    $conn,
+    $sql,
+    array($id)
+);
 
-if ($result->num_rows == 0) {
+if (!$result || pg_num_rows($result) == 0) {
     echo "OS não encontrada.";
     exit();
 }
 
-$os = $result->fetch_assoc();
+$os = pg_fetch_assoc($result);
 ?>
 
 <!doctype html>
@@ -121,12 +124,15 @@ $os = $result->fetch_assoc();
     }
 
     @media print {
+
       .top-buttons {
         display: none;
       }
+
       body {
         background: white;
       }
+
       .os-box {
         border: none;
         width: 100%;
@@ -142,6 +148,7 @@ $os = $result->fetch_assoc();
 
   <!-- Botões -->
   <div class="top-buttons">
+
     <a href="consulta.php" class="btn btn-secondary">
       Voltar
     </a>
@@ -149,21 +156,29 @@ $os = $result->fetch_assoc();
     <button onclick="window.print()" class="btn btn-primary">
       Imprimir OS
     </button>
+
   </div>
 
   <!-- Cabeçalho -->
   <div class="titulo">GGS</div>
+
   <div class="subtitulo">
+
     ORDEM DE SERVIÇO <br>
-    Nº OS: <?= str_pad($os["id"], 6, "0", STR_PAD_LEFT) ?>
+
+    Nº OS:
+    <?= str_pad($os["id"], 6, "0", STR_PAD_LEFT) ?>
+
   </div>
 
   <p class="text-center">
-    <b>Status:</b> <?= $os["status"] ?>
+    <b>Status:</b>
+    <?= htmlspecialchars($os["status"]) ?>
   </p>
 
   <p class="text-center">
     <b>Data de Abertura:</b>
+
     <?= date("d/m/Y H:i", strtotime($os["data_abertura"])) ?>
   </p>
 
@@ -171,9 +186,22 @@ $os = $result->fetch_assoc();
 
   <!-- Cliente -->
   <div class="dados">
-    <p><b>Cliente:</b> <?= $os["cliente_nome"] ?></p>
-    <p><b>Telefone:</b> <?= $os["telefone"] ?></p>
-    <p><b>Endereço:</b> <?= $os["endereco"] ?></p>
+
+    <p>
+      <b>Cliente:</b>
+      <?= htmlspecialchars($os["cliente_nome"]) ?>
+    </p>
+
+    <p>
+      <b>Telefone:</b>
+      <?= htmlspecialchars($os["telefone"]) ?>
+    </p>
+
+    <p>
+      <b>Endereço:</b>
+      <?= htmlspecialchars($os["endereco"]) ?>
+    </p>
+
   </div>
 
   <!-- Equipamento -->
@@ -182,25 +210,67 @@ $os = $result->fetch_assoc();
   </div>
 
   <div class="dados mt-3">
-    <p><b>Equipamento:</b>
-      <?= $os["impressora_modelo"] ?>
+
+    <p>
+      <b>Equipamento:</b>
+      <?= htmlspecialchars($os["impressora_modelo"]) ?>
     </p>
 
-    <p><b>Departamento:</b> <?= $os["departamento_nome"] ?></p>
+    <p>
+      <b>Patrimônio:</b>
+      <?= htmlspecialchars($os["impressora_patrimonio"]) ?>
+    </p>
 
-    <p><b>Problema:</b> <?= $os["problema"] ?></p>
+    <p>
+      <b>Departamento:</b>
+      <?= htmlspecialchars($os["departamento_nome"]) ?>
+    </p>
 
-    <p><b>Ocorrência:</b> <?= $os["servico"] ?></p>
+    <p>
+      <b>Problema:</b>
+      <?= nl2br(htmlspecialchars($os["problema"])) ?>
+    </p>
 
-    <p><b>Contato:</b> <?= $os["telefone"] ?></p>
+    <p>
+      <b>Ocorrência:</b>
+      <?= nl2br(htmlspecialchars($os["servico"])) ?>
+    </p>
+
+    <p>
+      <b>Contato:</b>
+      <?= htmlspecialchars($os["telefone"]) ?>
+    </p>
+
+    <p>
+      <b>Valor:</b>
+      R$ <?= number_format($os["valor"], 2, ",", ".") ?>
+    </p>
+
+    <?php if (!empty($os["data_fechamento"])): ?>
+
+      <p>
+        <b>Data de Fechamento:</b>
+
+        <?= date("d/m/Y H:i", strtotime($os["data_fechamento"])) ?>
+      </p>
+
+    <?php endif; ?>
+
   </div>
 
   <div class="linha"></div>
 
-  <!-- Assinatura -->
+  <!-- Assinaturas -->
   <div class="assinaturas">
-    <div>Visto do Cliente</div>
-    <div>Assinatura</div>
+
+    <div>
+      Visto do Cliente
+    </div>
+
+    <div>
+      Assinatura Técnico
+    </div>
+
   </div>
 
 </div>
